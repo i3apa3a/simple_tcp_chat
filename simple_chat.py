@@ -36,29 +36,36 @@ def start_server(tcp_ip, tcp_port, buffer_size, is_color):
     s.listen(1)
     conn, addr = s.accept()
     print('Connection address:', addr)
+    nickname_s = input('Enter nickname: ')
+    conn.send(nickname_s.encode())
+    print('Waiting client nickname...')
+    nickname_c = conn.recv(buffer_size).decode()
+    print('Client name is %s' % nickname_c)
     color_ss, color_cs = colorization(is_color)
     while 1:
         data = conn.recv(buffer_size)
-        if not data:
-            break
-        print(color_cs, "<Interlocutor>:", data.decode())
-        my_message = input(color_ss +" <i>           : ")
-        conn.send(my_message.encode(encoding='UTF-8'))
+
+        print(color_cs, '<', nickname_c, '>:', data.decode())
+        my_message = input(color_ss +' < %s >: ' % nickname_s)
+        conn.send(my_message.encode())
     conn.close()
 
 def chatting(tcp_ip, tcp_port, buffer_size, is_color):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((tcp_ip, tcp_port))
     color_ss, color_cs = colorization(is_color)
+    print('Waiting server nickname...')
+    nickname_s = s.recv(buffer_size).decode()
+    nickname_c = input('Enter nickname (%s already in use): ' % nickname_s)
+    s.send(nickname_c.encode())
     while 1:
-        my_message = input(color_cs+' <I>           : ')
+        my_message = input(color_cs+' < %s >: ' % nickname_c)
         s.send(my_message.encode())
         response = s.recv(buffer_size)
-        print(color_ss, "<Interlocutor>:", response.decode(encoding='UTF-8'))
+        print(color_ss, '<', nickname_s, '>:', response.decode())
     s.close()
 
 if __name__=='__main__':
     tcp_ip, tcp_port, buffer_size, is_color, is_server = parsing_from_cl()
     if is_server: start_server(tcp_ip, tcp_port, buffer_size, is_color)
     else: chatting(tcp_ip, tcp_port, buffer_size, is_color)
-    
